@@ -2,7 +2,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useSidebar } from "@/context/SidebarContext";
-import { Calendar, LayoutDashboard, LineChart, Settings, Clock, SquareCheckBig, FolderOpen } from "lucide-react";
+import { Calendar, LayoutDashboard, LineChart, Settings, Clock, SquareCheckBig, FolderOpen, UsersRound } from "lucide-react";
 
 const Sidebar: React.FC = () => {
   const { isExpanded, toggleSidebar } = useSidebar();
@@ -83,7 +83,7 @@ const Sidebar: React.FC = () => {
             to="/user"
             className={`sidebar-link ${isActiveRoute("/user") && "active"}`}
           >
-            <Calendar size={18} />
+            <UsersRound size={18} />
             {isExpanded && <span>User</span>}
           </Link>
 

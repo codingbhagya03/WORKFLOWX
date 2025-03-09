@@ -8,45 +8,70 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const navigate = useNavigate();
+
+  const validateForm = (): boolean => {
+    const newErrors: { email?: string; password?: string } = {};
+    let isValid = true;
+
+    // Email validation
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+      isValid = false;
+    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email)) {
+      newErrors.email = "Invalid email address";
+      isValid = false;
+    }
+
+    // Password validation
+    if (!password) {
+      newErrors.password = "Password is required";
+      isValid = false;
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleInputChange = (field: 'email' | 'password', value: string) => {
+    if (field === 'email') {
+      setEmail(value);
+    } else {
+      setPassword(value);
+    }
+    
+    // Clear error when field is edited
+    if (errors[field]) {
+      setErrors({
+        ...errors,
+        [field]: undefined
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    // Store only local storege
-    //   try {
-    //     const response = await axios.post("http://localhost:5000/login", { email, password });
-
-    //     if (response.data.token) {
-    //       localStorage.setItem("authToken", response.data.token);
-    //       toast.success("Login successful!");
-    //       navigate("/"); 
-    //     } else {
-    //       toast.error(response.data.message || "Invalid credentials! Please try again.");
-    //     }
-    //   } catch (error) {
-    //     console.error("Login Error:", error);
-    //     toast.error("Login failed! Check your credentials.");
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // };
+    
+    if (!validateForm()) {
+      return;
+    }
 
     try {
       setIsLoading(true);
       await axios.post("http://localhost:5000/login", { email, password }, { withCredentials: true });
       toast.success("Login successful!");
       setTimeout(() => navigate("/"), 1000);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login Error:", error.response?.data || error.message);
       toast.error(error.response?.data?.message || "Login failed! Check your credentials.");
     } finally {
       setIsLoading(false);
     }
-
   };
-
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
@@ -69,10 +94,20 @@ const Login: React.FC = () => {
                 type="email"
                 placeholder="Enter your email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-colors"
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className={`w-full px-4 py-3 rounded-lg border ${errors.email ? 'border-red-500' : 'border-border'} bg-background focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-colors`}
                 disabled={isLoading}
               />
+              {errors.email && (
+                <div className="text-red-500 text-sm mt-1 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                    <path d="M12 9v4"></path>
+                    <path d="M12 17h.01"></path>
+                  </svg>
+                  {errors.email}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -89,10 +124,20 @@ const Login: React.FC = () => {
                 type="password"
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-colors"
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                className={`w-full px-4 py-3 rounded-lg border ${errors.password ? 'border-red-500' : 'border-border'} bg-background focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-colors`}
                 disabled={isLoading}
               />
+              {errors.password && (
+                <div className="text-red-500 text-sm mt-1 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                    <path d="M12 9v4"></path>
+                    <path d="M12 17h.01"></path>
+                  </svg>
+                  {errors.password}
+                </div>
+              )}
             </div>
 
             <div className="pt-2">
