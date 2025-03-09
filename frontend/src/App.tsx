@@ -21,6 +21,7 @@ import TaskCalendar from "@/pages/Calendar";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/pages/ProtectedRoute";
+import User from "./pages/User";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
                       <Route path="analytics" element={<Analytics />} />
                       <Route path="timesheets" element={<Timesheet />} />
                       <Route path="calendar" element={<TaskCalendar />} />
+                      <Route path="user" element={<User />} />
                       <Route path="settings" element={<Settings />} />
                     </Route>
   

@@ -80,6 +80,14 @@ const Sidebar: React.FC = () => {
           </Link>
 
           <Link
+            to="/user"
+            className={`sidebar-link ${isActiveRoute("/user") && "active"}`}
+          >
+            <Calendar size={18} />
+            {isExpanded && <span>User</span>}
+          </Link>
+
+          <Link
             to="/settings"
             className={`sidebar-link ${isActiveRoute("/settings") && "active"}`}
           >
