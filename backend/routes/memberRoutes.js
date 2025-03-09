@@ -2,8 +2,11 @@ const express = require("express");
 const Member = require("../models/Member");
 const router = express.Router();
 
+// Define available roles globally
+const availableRoles = ["Admin", "Manager", "Developer", "Designer"];
+
 // GET all members
-router.get("/", async (req, res) => {
+router.get("/", async (_req, res) => {
   try {
     const members = await Member.find();
     res.status(200).json(members);
@@ -13,7 +16,18 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET a specific member by ID
+// GET roles endpoint - IMPORTANT: This specific route must come BEFORE the /:id route
+router.get("/roles", (req, res) => {
+  try {
+    console.log("Roles endpoint hit");
+    res.status(200).json(availableRoles);
+  } catch (err) {
+    console.error("Error fetching roles:", err);
+    res.status(500).json({ message: "Error fetching roles" });
+  }
+});
+
+// GET a specific member by ID - This comes AFTER the /roles route
 router.get("/:id", async (req, res) => {
   try {
     const member = await Member.findById(req.params.id);
@@ -30,12 +44,23 @@ router.get("/:id", async (req, res) => {
 // POST a new member
 router.post("/", async (req, res) => {
   try {
-    const { name, email, role, timeToday, timeThisWeek } = req.body;
+    const { name, email, roles, timeToday, timeThisWeek } = req.body;
+
+    // Check that the roles are valid
+    if (!roles || roles.length === 0) {
+      return res.status(400).json({ message: "Roles are required" });
+    }
+
+    // Ensure the roles are from the available list
+    const invalidRoles = roles.filter(role => !availableRoles.includes(role));
+    if (invalidRoles.length > 0) {
+      return res.status(400).json({ message: `Invalid roles: ${invalidRoles.join(", ")}` });
+    }
+
     const newMember = new Member({
       name,
       email,
-      role,
-      // projects,
+      roles,
       timeToday,
       timeThisWeek,
     });
@@ -51,10 +76,22 @@ router.post("/", async (req, res) => {
 // PUT (update) an existing member
 router.put("/:id", async (req, res) => {
   try {
-    const { name, email, role, timeToday, timeThisWeek } = req.body;
+    const { name, email, roles, timeToday, timeThisWeek } = req.body;
+
+    // Check that the roles are valid
+    if (!roles || roles.length === 0) {
+      return res.status(400).json({ message: "Roles are required" });
+    }
+
+    // Ensure the roles are from the available list
+    const invalidRoles = roles.filter(role => !availableRoles.includes(role));
+    if (invalidRoles.length > 0) {
+      return res.status(400).json({ message: `Invalid roles: ${invalidRoles.join(", ")}` });
+    }
+
     const updatedMember = await Member.findByIdAndUpdate(
       req.params.id,
-      { name, email, role },
+      { name, email, roles, timeToday, timeThisWeek },
       { new: true } // Return the updated member
     );
     

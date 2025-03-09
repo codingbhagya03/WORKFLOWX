@@ -1,24 +1,23 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Select from "react-select";
 import { useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:5000/api/members";
+const ROLES_API_URL = "http://localhost:5000/api/members/roles"; // New endpoint to fetch roles
 
 interface Member {
     _id?: string;
     name: string;
-    role: string;
+    roles: string[]; // Multiple roles
     email: string;
     timeToday: number;
     timeThisWeek: number;
-    // projects: string[];
 }
 
 const User: React.FC = () => {
@@ -28,10 +27,12 @@ const User: React.FC = () => {
     const [currentMember, setCurrentMember] = useState<Partial<Member> | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [roleOptions, setRoleOptions] = useState<{ value: string, label: string }[]>([]);
 
     // Fetch Members
     useEffect(() => {
         fetchMembers();
+        fetchRoles(); // Fetch roles from backend
     }, []);
 
     const fetchMembers = async () => {
@@ -50,6 +51,24 @@ const User: React.FC = () => {
         }
     };
 
+    const fetchRoles = async () => {
+        try {
+            const response = await axios.get(ROLES_API_URL, { withCredentials: true });
+            const roles = response.data;
+            const formattedRoles = roles.map((role: string) => ({
+                value: role,
+                label: role
+            }));
+            setRoleOptions(formattedRoles);
+        } catch (error) {
+            console.error("Error fetching roles:", error);
+            if (axios.isAxiosError(error)) {
+                console.error("Response status:", error.response?.status);
+                console.error("Response data:", error.response?.data);
+            }
+        }
+    };
+    
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (currentMember) {
@@ -58,7 +77,7 @@ const User: React.FC = () => {
             try {
                 const config = {
                     withCredentials: true,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { "Content-Type": "application/json" },
                 };
                 if (currentMember._id) {
                     await axios.put(`${API_URL}/${currentMember._id}`, currentMember, config);
@@ -101,10 +120,13 @@ const User: React.FC = () => {
                 <CardHeader>
                     <CardTitle>User Manager</CardTitle>
                 </CardHeader>
-                <Button className="me-7" onClick={() => {
-                    setCurrentMember({ name: "", role: "", email: "", timeToday: 0, timeThisWeek: 0 });
-                    setOpen(true);
-                }}>
+                <Button
+                    className="me-7"
+                    onClick={() => {
+                        setCurrentMember({ name: "", roles: [], email: "", timeToday: 0, timeThisWeek: 0 });
+                        setOpen(true);
+                    }}
+                >
                     Add User
                 </Button>
             </div>
@@ -113,33 +135,31 @@ const User: React.FC = () => {
                 {error && <div className="text-red-500 py-4">{error}</div>}
 
                 {!isLoading && !error && Members.length > 0 && (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Role</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {Members.map(Member => (
-                                <TableRow key={Member._id}>
-                                    <TableCell>{Member.name}</TableCell>
-                                    <TableCell>{Member.role}</TableCell>
-                                    <TableCell>{Member.email}</TableCell>
-                                    <TableCell className="space-x-2">
-                                        <Button variant="outline" onClick={() => { setCurrentMember(Member); setOpen(true); }}>
+                    <table className="w-full mt-4 border-collapse border border-gray-300">
+                        <thead>
+                            <tr className="bg-gray-100">
+                                <th className="border p-2">Name</th>
+                                <th className="border p-2">Roles</th>
+                                <th className="border p-2">Email</th>
+                                <th className="border p-2">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Members.map((member) => (
+                                <tr key={member._id} className="border">
+                                    <td className="border p-2">{member.name}</td>
+                                    <td className="border p-2">{member.roles.join(", ")}</td>
+                                    <td className="border p-2">{member.email}</td>
+                                    <td className="border p-2 space-x-2">
+                                        <Button variant="outline" onClick={() => { setCurrentMember(member); setOpen(true); }}>
                                             Edit
                                         </Button>
-                                        <Button variant="destructive" onClick={() => handleDelete(Member._id!)}>
-                                            Delete
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
+                                        <Button variant="destructive" onClick={() => handleDelete(member._id!)}>Delete</Button>
+                                    </td>
+                                </tr>
                             ))}
-                        </TableBody>
-                    </Table>
+                        </tbody>
+                    </table>
                 )}
             </CardContent>
 
@@ -154,35 +174,32 @@ const User: React.FC = () => {
                         <Input
                             type="text"
                             value={currentMember?.name || ""}
-                            onChange={e => setCurrentMember({ ...currentMember, name: e.target.value })}
+                            onChange={(e) => setCurrentMember({ ...currentMember, name: e.target.value })}
                             required
                         />
 
-                        <Label>Role</Label>
-                        <Input
-                            type="text"
-                            value={currentMember?.role || ""}
-                            onChange={e => setCurrentMember({ ...currentMember, role: e.target.value })}
-                            required
+                        <Label>Roles</Label>
+                        <Select
+                            isMulti
+                            name="roles"
+                            options={roleOptions} // Use dynamic role options
+                            value={roleOptions.filter((option) => currentMember?.roles?.includes(option.value))}
+                            onChange={(selectedOptions) => {
+                                const roles = selectedOptions.map((option) => option.value);
+                                setCurrentMember({ ...currentMember, roles });
+                            }}
                         />
 
                         <Label>Email</Label>
                         <Input
                             type="email"
                             value={currentMember?.email || ""}
-                            onChange={e => setCurrentMember({ ...currentMember, email: e.target.value })}
+                            onChange={(e) => setCurrentMember({ ...currentMember, email: e.target.value })}
                             required
                         />
 
-                        {/* <Label>Projects</Label>
-                        <Input
-                            type="text"
-                            value={currentMember?.projects.join(", ") || ""}
-                            onChange={e => setCurrentMember({ ...currentMember, projects: e.target.value.split(", ") })}
-                        /> */}
-
                         <Button type="submit" disabled={isLoading}>
-                            {isLoading ? "Saving..." : (currentMember?._id ? "Update Member" : "Add Member")}
+                            {isLoading ? "Saving..." : currentMember?._id ? "Update Member" : "Add Member"}
                         </Button>
                     </form>
                 </DialogContent>

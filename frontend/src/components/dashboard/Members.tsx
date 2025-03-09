@@ -92,7 +92,7 @@ const Members: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-medium">{member.name}</p>
-                <p className="text-xs text-muted-foreground">{member.role}</p>
+                <p className="text-xs text-muted-foreground">{member.roles}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Creating UI and Research
                 </p>

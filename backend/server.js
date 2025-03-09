@@ -151,7 +151,8 @@ const authMiddleware = (req, res, next) => {
 app.use("/api/todos", authMiddleware, todoRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/projects", authMiddleware,projectRoutes);
-app.use("/api/members", authMiddleware, memberRoutes);
+app.use("/api/members", memberRoutes);
+// app.use("/api/members/roles", memberRoutes);
 app.use("/api/timesheets", authMiddleware, timesheetRoutes);
 
 
