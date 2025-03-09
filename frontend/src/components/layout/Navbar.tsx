@@ -1,9 +1,9 @@
-import React from "react";
-import { ArrowLeft, ArrowRight, Bell, LogOut, PanelRight } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { LogOut, PanelRight } from "lucide-react";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { useSidebar } from "@/context/SidebarContext";
-import { useAuth } from "@/context/AuthContext"; // Import useAuth for logout
-import { useNavigate } from "react-router-dom"; 
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 interface NavbarProps {
@@ -12,22 +12,69 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ pageTitle }) => {
   const { isExpanded, toggleSidebar } = useSidebar();
-  const { logout } = useAuth(); // Get logout function from AuthContext
-  const navigate = useNavigate(); // Hook for navigation
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const [user, setUser] = useState({ fullName: "", email: "", roles: [] as string[] });
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const authRes = await axios.get("http://localhost:5000/check-auth", { withCredentials: true });
+        
+        if (authRes.data.isAuthenticated) {
+          console.log("User authenticated:", authRes.data);
+          
+          // Fetch user details from users API
+          const userRes = await axios.get(`http://localhost:5000/api/users/${authRes.data.userId}`, { withCredentials: true });
+          console.log("User details fetched:", userRes.data);
+          
+          // Fetch roles from members API
+          try {
+            const memberRes = await axios.get(`http://localhost:5000/api/members/roles`, { withCredentials: true });
+            console.log("Roles fetched:", memberRes.data);
+            
+            setUser({
+              fullName: userRes.data.name,
+              email: userRes.data.email,
+              // Use roles from the members/roles API
+              roles: memberRes.data || []
+            });
+          } catch (memberError) {
+            console.error("Error fetching roles:", memberError);
+            // Fallback to empty roles array if fetch fails
+            setUser({
+              fullName: userRes.data.name,
+              email: userRes.data.email,
+              roles: []
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleLogout = async () => {
     try {
       await axios.post("http://localhost:5000/logout", {}, { withCredentials: true });
-
-      // Local Storage se token hatao (Agar localStorage use ho raha ho)
       localStorage.removeItem("token");
-
-      // State Update karo
-      navigate("/login"); // Redirect to Login Page
-      window.location.reload(); // Hard refresh to clear cookies instantly
+      navigate("/login");
+      window.location.reload();
     } catch (error) {
       console.error("Logout failed:", error);
     }
+  };
+
+  // Function to generate user initials
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
   };
 
   return (
@@ -40,16 +87,8 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle }) => {
           <PanelRight size={18} />
         </button>
       </div>
-
+      
       <div className="flex items-center space-x-4">
-        {/* Notification Bell */}
-        {/* <button className="w-10 h-10 flex items-center justify-center rounded-full bg-background border border-border hover:bg-secondary transition-colors duration-200 relative">
-          <Bell size={18} />
-          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-medium text-black">
-            3
-          </div>
-        </button> */}
-
         {/* Logout Button */}
         <button
           onClick={handleLogout}
@@ -57,19 +96,23 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle }) => {
         >
           <LogOut size={18} />
         </button>
-
+        
         {/* Theme Toggle Button */}
         <ThemeToggle />
-
+        
         {/* User Info */}
-        <div className="flex items-center space-x-3">
-          <div className="text-right hidden sm:block">
-            <div className="text-sm font-medium">Bhagya Patel</div>
-            <div className="text-xs text-muted-foreground">Task Manager</div>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-800 font-medium border-2 border-yellow-500">
-            BP
-          </div>
+        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate("/settings")} >
+          {user.fullName && (
+            <>
+              <div className="text-right hidden sm:block">
+                <div className="text-sm font-medium">{user.fullName}</div>
+                <div className="text-xs text-muted-foreground truncate w-14">{user.roles && user.roles.length > 0 ? user.roles.join(", ") : "No Role Found"}</div>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-800 font-medium border-2 border-yellow-500">
+                {getInitials(user.fullName)}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

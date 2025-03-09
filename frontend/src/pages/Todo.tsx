@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SquarePen, Trash } from "lucide-react";
 
 const API_URL = "http://localhost:5000/api/tasks";
 
@@ -50,11 +51,11 @@ const TaskManager: React.FC = () => {
     }
   };
 
- const fetchTasks = async () => {
+  const fetchTasks = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.get(API_URL, { 
+      const response = await axios.get(API_URL, {
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json'
@@ -140,18 +141,18 @@ const TaskManager: React.FC = () => {
             </TabsList>
           </Tabs>
 
-          <Button 
-            onClick={() => { 
-              setCurrentTask({ 
-                title: "", 
-                projects: "", 
-                status: "Pending", 
-                priority: "medium", 
+          <Button className="me-7"
+            onClick={() => {
+              setCurrentTask({
+                title: "",
+                projects: "",
+                status: "Pending",
+                priority: "medium",
                 assignedUser: "",
                 startDate: "",
-                dueDate: "" 
-              }); 
-              setOpen(true); 
+                dueDate: ""
+              });
+              setOpen(true);
             }}
           >
             Add Task
@@ -186,12 +187,15 @@ const TaskManager: React.FC = () => {
                   <TableCell>{task.priority}</TableCell>
                   <TableCell>{task.dueDate || "N/A"}</TableCell>
                   <TableCell className="space-x-2">
-                    <Button variant="outline" onClick={() => { setCurrentTask(task); setOpen(true); }}>
-                      Edit
-                    </Button>
-                    <Button variant="destructive" onClick={() => handleDelete(task._id!)}>
-                      Delete
-                    </Button>
+                    <div className="flex gap-4">
+                      <SquarePen size={18} onClick={() => {
+                        setCurrentTask(task); setOpen(true);
+                        setOpen(true);
+                      }}
+                        className="text-blue-500 hover:text-blue-700 cursor-pointer" />
+                      <Trash size={18} onClick={() => handleDelete(task._id!)}
+                        className="text-red-500 hover:text-red-700 cursor-pointer" />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -208,28 +212,28 @@ const TaskManager: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label>Title</Label>
-              <Input 
-                type="text" 
-                value={currentTask?.title || ""} 
-                onChange={e => setCurrentTask({ ...currentTask, title: e.target.value })} 
-                required 
+              <Input
+                type="text"
+                value={currentTask?.title || ""}
+                onChange={e => setCurrentTask({ ...currentTask, title: e.target.value })}
+                required
               />
             </div>
 
             <div className="space-y-2">
               <Label>Project</Label>
-              <Input 
-                type="text" 
-                value={currentTask?.projects || ""} 
-                onChange={e => setCurrentTask({ ...currentTask, projects: e.target.value })} 
-                required 
+              <Input
+                type="text"
+                value={currentTask?.projects || ""}
+                onChange={e => setCurrentTask({ ...currentTask, projects: e.target.value })}
+                required
               />
             </div>
 
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select 
-                value={currentTask?.status || "Pending"} 
+              <Select
+                value={currentTask?.status || "Pending"}
                 onValueChange={value => setCurrentTask({ ...currentTask, status: value })}
               >
                 <SelectTrigger>
@@ -244,8 +248,8 @@ const TaskManager: React.FC = () => {
 
             <div className="space-y-2">
               <Label>Priority</Label>
-              <Select 
-                value={currentTask?.priority || "Medium"} 
+              <Select
+                value={currentTask?.priority || "Medium"}
                 onValueChange={value => setCurrentTask({ ...currentTask, priority: value })}
               >
                 <SelectTrigger>
@@ -261,17 +265,17 @@ const TaskManager: React.FC = () => {
 
             <div className="space-y-2">
               <Label>Due Date</Label>
-              <Input 
-                type="date" 
-                value={currentTask?.dueDate || ""} 
-                onChange={e => setCurrentTask({ ...currentTask, dueDate: e.target.value })} 
+              <Input
+                type="date"
+                value={currentTask?.dueDate || ""}
+                onChange={e => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
               />
             </div>
 
             <div className="space-y-2">
               <Label>Assigned User</Label>
-              <Select 
-                value={currentTask?.assignedUser || ""} 
+              <Select
+                value={currentTask?.assignedUser || ""}
                 onValueChange={value => setCurrentTask({ ...currentTask, assignedUser: value })}
               >
                 <SelectTrigger>

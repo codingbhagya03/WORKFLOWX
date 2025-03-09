@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const EmployeeModel = require("./models/Employee");
@@ -20,7 +19,7 @@ app.use(express.json());
 app.use(
   cors({
     origin: "http://localhost:3000", // Change this to your frontend URL
-    credentials: true, 
+    credentials: true,
   })
 );
 app.use(cookieParser());
@@ -75,8 +74,8 @@ app.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
-    console.log('tokennnnnnn',token);
-    
+    console.log('tokennnnnnn', token);
+
     // res.cookie("token", token, {
     //   httpOnly: true,
     //   secure: process.env.NODE_ENV === "production",
@@ -86,12 +85,12 @@ app.post("/login", async (req, res) => {
 
 
     const cookies = res.cookie("token", token, {
-      httpOnly: true, 
+      httpOnly: true,
       secure: true, sameSite: "Strict",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     // console.log('cookies',cookies);
-    
+
 
     res.json({ message: "Login successful", user: { id: user._id, email: user.email, name: user.name } });
   } catch (error) {
@@ -100,6 +99,101 @@ app.post("/login", async (req, res) => {
   }
 });
 
+app.get("/api/users/:id", async (req, res) => {
+  try {
+    const user = await EmployeeModel.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({ name: user.name, email: user.email });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching user details", error });
+  }
+});
+
+app.put("/api/users/update", async (req, res) => {
+  try {
+    const { fullName, email, userId } = req.body;
+    const user = await EmployeeModel.findById(userId || req.user.id);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.name = fullName;  // Make sure this matches the field name in your model
+    user.email = email;
+    await user.save();
+
+    res.json({ message: "Profile updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating profile", error });
+  }
+});
+
+// Password update route
+// Alternative password update route
+app.put("/api/users/password", async (req, res) => {
+  try {
+    const { currentPassword, newPassword, userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+    
+    const user = await EmployeeModel.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Check current password
+    if (currentPassword !== user.password) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+    
+    // Update password
+    user.password = newPassword;
+    await user.save();
+    
+    res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Password update error:", error);
+    res.status(500).json({ 
+      message: "Error updating password", 
+      error: error.message
+    });
+  }
+});
+
+// Account deletion route - updated to use userId from request body
+app.delete("/api/users/delete", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+    
+    const user = await EmployeeModel.findByIdAndDelete(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Clear auth cookie
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Strict"
+    });
+    
+    res.json({ message: "Account deleted successfully" });
+  } catch (error) {
+    console.error("Account deletion error details:", error);
+    res.status(500).json({ 
+      message: "Error deleting account", 
+      error: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+    });
+  }
+});
 
 // 🔹 **Check Authentication (Persistent Login)**
 app.get("/check-auth", (req, res) => {
@@ -147,11 +241,10 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-
 // ✅ 🟢 **Todo Routes (Task Management)**
 app.use("/api/todos", authMiddleware, todoRoutes);
 app.use("/api/tasks", taskRoutes);
-app.use("/api/projects", authMiddleware,projectRoutes);
+app.use("/api/projects", authMiddleware, projectRoutes);
 app.use("/api/members", memberRoutes);
 // app.use("/api/members/roles", memberRoutes);
 app.use("/api/timesheets", authMiddleware, timesheetRoutes);

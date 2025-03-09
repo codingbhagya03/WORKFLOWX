@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -213,60 +214,65 @@ const ProjectManager: React.FC = () => {
 
     return (
         <Card className="p-3 max-w-7xl mx-auto mt-6">
-            <CardHeader>
-                <CardTitle>Project Manager</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Button onClick={() => {
+            <div className="flex justify-between items-center">
+                <CardHeader>
+                    <CardTitle>Project Manager</CardTitle>
+                </CardHeader>
+                <Button className="me-7" onClick={() => {
                     setCurrentProject({ name: "", description: "", teamMembers: "", startDate: "", endDate: "", status: "Not Started", budget: 0 });
                     setValidationErrors({}); setOpen(true);
                 }}> Add Project
                 </Button>
+            </div>
+            <CardContent>
                 {isLoading && <div className="text-center py-4">Loading projects...</div>}
                 {error && <div className="text-red-500 py-4">{error}</div>}
-
-                <table className="w-full mt-4 border-collapse border border-gray-300">
-                    <thead>
-                        <tr className="bg-gray-100">
-                            <th className="border p-2">Name</th>
-                            <th className="border p-2">Description</th>
-                            <th className="border p-2">Team Members</th>
-                            <th className="border p-2">Start Date</th>
-                            <th className="border p-2">End Date</th>
-                            <th className="border p-2">Budget (₹)</th>
-                            <th className="border p-2">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {projects.length === 0 ? (
-                            <tr>
-                                <td colSpan={7} className="text-center p-4">No projects found</td>
-                            </tr>
-                        ) : (
-                            projects.map(project => (
-                                <tr key={project._id} className="border">
-                                    <td className="border p-2">{project.name}</td>
-                                    <td className="border p-2">{project.description}</td>
-                                    <td className="border p-2">{project.teamMembers}</td>
-                                    <td className="border p-2">{project.startDate}</td>
-                                    <td className="border p-2">{project.endDate}</td>
-                                    <td className="border p-2">₹{formatRupees(project.budget)}</td>
-                                    <td className="border p-2">
-                                        <div className="flex justify-center gap-4">
-                                            <SquarePen size={18} onClick={() => {
-                                                setCurrentProject(project); setValidationErrors({});
-                                                setOpen(true);
-                                            }}
-                                                className="text-blue-500 hover:text-blue-700 cursor-pointer" />
-                                            <Trash size={18} onClick={() => handleDelete(project._id!)}
-                                                className="text-red-500 hover:text-red-700 cursor-pointer" />
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                {
+                    !isLoading && !error && projects.length > 0 && (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Project Name</TableHead>
+                                    <TableHead>Project Description</TableHead>
+                                    <TableHead>Team Members</TableHead>
+                                    <TableHead>Start Date</TableHead>
+                                    <TableHead>End Date</TableHead>
+                                    <TableHead>Budget (₹)</TableHead>
+                                    <TableHead>Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {
+                                    projects.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={7} className="text-center p-4">No projects found</td>
+                                        </tr>
+                                    ) : (
+                                        projects.map(project => (
+                                            <TableRow key={project._id}>
+                                                <TableCell>{project.name}</TableCell>
+                                                <TableCell>{project.description}</TableCell>
+                                                <TableCell>{project.teamMembers}</TableCell>
+                                                <TableCell>{project.startDate}</TableCell>
+                                                <TableCell>{project.endDate}</TableCell>
+                                                <TableCell>₹{formatRupees(project.budget)}</TableCell>
+                                                <TableCell className="space-x-2">
+                                                    <div className="flex justify-center gap-4">
+                                                        <SquarePen size={18} onClick={() => {
+                                                            setCurrentProject(project); setValidationErrors({});
+                                                            setOpen(true);
+                                                        }}
+                                                            className="text-blue-500 hover:text-blue-700 cursor-pointer" />
+                                                        <Trash size={18} onClick={() => handleDelete(project._id!)}
+                                                            className="text-red-500 hover:text-red-700 cursor-pointer" />
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                            </TableBody>
+                        </Table>
+                    )}
             </CardContent>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent className="sm:max-w-[425px]">
@@ -361,7 +367,7 @@ const ProjectManager: React.FC = () => {
                     </form>
                 </DialogContent>
             </Dialog>
-        </Card>
+        </Card >
     );
 };
 

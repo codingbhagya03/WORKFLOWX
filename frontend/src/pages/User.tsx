@@ -2,19 +2,21 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Select from "react-select";
 import { useNavigate } from "react-router-dom";
+import { SquarePen, Trash } from "lucide-react";
 
 const API_URL = "http://localhost:5000/api/members";
-const ROLES_API_URL = "http://localhost:5000/api/members/roles"; // New endpoint to fetch roles
+const ROLES_API_URL = "http://localhost:5000/api/members/roles"; 
 
 interface Member {
     _id?: string;
     name: string;
-    roles: string[]; // Multiple roles
+    roles: string[]; 
     email: string;
     timeToday: number;
     timeThisWeek: number;
@@ -29,10 +31,17 @@ const User: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [roleOptions, setRoleOptions] = useState<{ value: string, label: string }[]>([]);
 
-    // Fetch Members
+    // Poll for updates every 30 seconds to ensure synchronization
     useEffect(() => {
         fetchMembers();
-        fetchRoles(); // Fetch roles from backend
+        fetchRoles();
+        
+        const interval = setInterval(() => {
+            fetchMembers();
+            fetchRoles();
+        }, 30000);
+        
+        return () => clearInterval(interval);
     }, []);
 
     const fetchMembers = async () => {
@@ -68,7 +77,7 @@ const User: React.FC = () => {
             }
         }
     };
-    
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (currentMember) {
@@ -121,7 +130,7 @@ const User: React.FC = () => {
                     <CardTitle>User Manager</CardTitle>
                 </CardHeader>
                 <Button
-                    className="me-7"
+                    className="me-16"
                     onClick={() => {
                         setCurrentMember({ name: "", roles: [], email: "", timeToday: 0, timeThisWeek: 0 });
                         setOpen(true);
@@ -135,31 +144,35 @@ const User: React.FC = () => {
                 {error && <div className="text-red-500 py-4">{error}</div>}
 
                 {!isLoading && !error && Members.length > 0 && (
-                    <table className="w-full mt-4 border-collapse border border-gray-300">
-                        <thead>
-                            <tr className="bg-gray-100">
-                                <th className="border p-2">Name</th>
-                                <th className="border p-2">Roles</th>
-                                <th className="border p-2">Email</th>
-                                <th className="border p-2">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {Members.map((member) => (
-                                <tr key={member._id} className="border">
-                                    <td className="border p-2">{member.name}</td>
-                                    <td className="border p-2">{member.roles.join(", ")}</td>
-                                    <td className="border p-2">{member.email}</td>
-                                    <td className="border p-2 space-x-2">
-                                        <Button variant="outline" onClick={() => { setCurrentMember(member); setOpen(true); }}>
-                                            Edit
-                                        </Button>
-                                        <Button variant="destructive" onClick={() => handleDelete(member._id!)}>Delete</Button>
-                                    </td>
-                                </tr>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Roles</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {Members.map(member => (
+                                <TableRow key={member._id}>
+                                    <TableCell>{member.name}</TableCell>
+                                    <TableCell>{member.roles.join(", ")}</TableCell>
+                                    <TableCell>{member.email}</TableCell>
+                                    <TableCell className="space-x-2">
+                                        <div className="flex gap-4">
+                                            <SquarePen size={18} onClick={() => {
+                                                setCurrentMember(member); setOpen(true);
+                                            }}
+                                                className="text-blue-500 hover:text-blue-700 cursor-pointer" />
+                                            <Trash size={18} onClick={() => handleDelete(member._id!)}
+                                                className="text-red-500 hover:text-red-700 cursor-pointer" />
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
                             ))}
-                        </tbody>
-                    </table>
+                        </TableBody>
+                    </Table>
                 )}
             </CardContent>
 
@@ -182,7 +195,7 @@ const User: React.FC = () => {
                         <Select
                             isMulti
                             name="roles"
-                            options={roleOptions} // Use dynamic role options
+                            options={roleOptions}
                             value={roleOptions.filter((option) => currentMember?.roles?.includes(option.value))}
                             onChange={(selectedOptions) => {
                                 const roles = selectedOptions.map((option) => option.value);

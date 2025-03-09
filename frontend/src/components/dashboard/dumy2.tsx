@@ -30,7 +30,7 @@
 //           <TabsTrigger value="privacy">Privacy</TabsTrigger>
 //           <TabsTrigger value="integrations">Integrations</TabsTrigger>
 //         </TabsList>
-        
+
 //         <TabsContent value="account" className="space-y-6">
 //           <Card>
 //             <CardHeader>
@@ -229,7 +229,7 @@
 //                   <Switch id="systemNotifications" />
 //                 </div>
 //               </div>
-              
+
 //               <div className="space-y-4 pt-4">
 //                 <h3 className="text-lg font-medium">Email Notification Frequency</h3>
 //                 <div className="space-y-2">
@@ -306,7 +306,7 @@
 //                   <Switch id="activityTracking" defaultChecked />
 //                 </div>
 //               </div>
-              
+
 //               <div className="space-y-4 pt-4">
 //                 <h3 className="text-lg font-medium">Data Management</h3>
 //                 <div className="space-y-2">
@@ -387,7 +387,7 @@
 //                   <Button variant="outline" size="sm">Connect</Button>
 //                 </div>
 //               </div>
-              
+
 //               <div className="space-y-4 pt-4">
 //                 <h3 className="text-lg font-medium">API Access</h3>
 //                 <div className="space-y-2">
@@ -406,3 +406,4 @@
 // };
 
 // export default Settings;
+

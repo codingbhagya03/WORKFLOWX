@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const API_URL = "http://localhost:5000/api/projects";
 
@@ -12,6 +13,7 @@ interface Project {
     endDate: string;
     status: string;
     budget: number;
+    teamMembers: string;
 }
 
 const Projects: React.FC = () => {
@@ -36,6 +38,10 @@ const Projects: React.FC = () => {
         }
     };
 
+    const formatRupees = (amount: number): string => {
+        return amount.toLocaleString('en-IN');
+    };
+
     return (
         <Card className="p-3 max-w-7xl w-full mx-auto mt-6">
             <CardHeader>
@@ -45,30 +51,40 @@ const Projects: React.FC = () => {
                 {isLoading && <div className="text-center py-4">Loading projects...</div>}
                 {error && <div className="text-red-500 py-4">{error}</div>}
 
-                <table className="w-full mt-4 border-collapse border border-gray-300">
-                    <thead>
-                        <tr className="bg-gray-100">
-                            <th className="border p-2">Name</th>
-                            <th className="border p-2">Description</th>
-                            <th className="border p-2">Start Date</th>
-                            <th className="border p-2">End Date</th>
-                            <th className="border p-2">Status</th>
-                            <th className="border p-2">Budget</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {projects.map(project => (
-                            <tr key={project._id} className="border">
-                                <td className="border p-2">{project.name}</td>
-                                <td className="border p-2">{project.description}</td>
-                                <td className="border p-2">{project.startDate}</td>
-                                <td className="border p-2">{project.endDate}</td>
-                                <td className="border p-2">{project.status}</td>
-                                <td className="border p-2">${project.budget}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                {
+                    !isLoading && !error && projects.length > 0 && (
+                        <Table>
+                            <TableHeader className="bg-yellow-300">
+                                <TableRow >
+                                    <TableHead>Project Name</TableHead>
+                                    <TableHead>Project Description</TableHead>
+                                    <TableHead>Team Members</TableHead>
+                                    <TableHead>Start Date</TableHead>
+                                    <TableHead>End Date</TableHead>
+                                    <TableHead>Budget (₹)</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {
+                                    projects.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={7} className="text-center p-4">No projects found</td>
+                                        </tr>
+                                    ) : (
+                                        projects.map(project => (
+                                            <TableRow key={project._id}>
+                                                <TableCell>{project.name}</TableCell>
+                                                <TableCell>{project.description}</TableCell>
+                                                <TableCell>{project.teamMembers}</TableCell>
+                                                <TableCell>{project.startDate}</TableCell>
+                                                <TableCell>{project.endDate}</TableCell>
+                                                <TableCell>₹{formatRupees(project.budget)}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                            </TableBody>
+                        </Table>
+                    )}
             </CardContent>
         </Card>
     );
