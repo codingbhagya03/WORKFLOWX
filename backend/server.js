@@ -11,7 +11,7 @@ const taskRoutes = require("./routes/taskRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const memberRoutes = require("./routes/memberRoutes");
 const timesheetRoutes = require("./routes/timesheetRoutes");
-
+const eventRoutes = require("./routes/eventRoutes");
 
 const app = express();
 
@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(
   cors({
     origin: "http://localhost:3000", // Change this to your frontend URL
-    credentials: true, // Allow cookies
+    credentials: true, 
   })
 );
 app.use(cookieParser());
@@ -86,7 +86,8 @@ app.post("/login", async (req, res) => {
 
 
     const cookies = res.cookie("token", token, {
-      httpOnly: true, secure: true, sameSite: "Strict",
+      httpOnly: true, 
+      secure: true, sameSite: "Strict",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     // console.log('cookies',cookies);
@@ -154,7 +155,7 @@ app.use("/api/projects", authMiddleware,projectRoutes);
 app.use("/api/members", memberRoutes);
 // app.use("/api/members/roles", memberRoutes);
 app.use("/api/timesheets", authMiddleware, timesheetRoutes);
-
+app.use("/api/events", authMiddleware, eventRoutes);
 
 // ✅ Start Server
 const PORT = process.env.PORT || 5000;
