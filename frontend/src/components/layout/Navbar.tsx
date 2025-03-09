@@ -19,12 +19,12 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle }) => {
     try {
       await axios.post("http://localhost:5000/logout", {}, { withCredentials: true });
 
-      // ✅ Local Storage se token hatao (Agar localStorage use ho raha ho)
+      // Local Storage se token hatao (Agar localStorage use ho raha ho)
       localStorage.removeItem("token");
 
-      // ✅ State Update karo
-      navigate("/login"); // ✅ Redirect to Login Page
-      window.location.reload(); // ✅ Hard refresh to clear cookies instantly
+      // State Update karo
+      navigate("/login"); // Redirect to Login Page
+      window.location.reload(); // Hard refresh to clear cookies instantly
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -43,12 +43,12 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle }) => {
 
       <div className="flex items-center space-x-4">
         {/* Notification Bell */}
-        <button className="w-10 h-10 flex items-center justify-center rounded-full bg-background border border-border hover:bg-secondary transition-colors duration-200 relative">
+        {/* <button className="w-10 h-10 flex items-center justify-center rounded-full bg-background border border-border hover:bg-secondary transition-colors duration-200 relative">
           <Bell size={18} />
           <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-medium text-black">
             3
           </div>
-        </button>
+        </button> */}
 
         {/* Logout Button */}
         <button
