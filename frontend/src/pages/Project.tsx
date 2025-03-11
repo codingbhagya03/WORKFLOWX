@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { SquarePen, Trash, AlertTriangle } from "lucide-react";
+import Select from "react-select";
 
-
-const API_URL = "http://localhost:5000/api/projects";
+const PROJECT_API_URL = "http://localhost:5000/api/projects";
+const MEMBERS_API_URL = "http://localhost:5000/api/members";
 
 interface Project {
     _id?: string;
@@ -20,7 +21,16 @@ interface Project {
     endDate: string;
     status: string;
     budget: number;
-    teamMembers: string;
+    teamMembers: string[];  // Changed to array of strings
+}
+
+interface Member {
+    _id: string;
+    name: string;
+    roles: string[];
+    email: string;
+    timeToday: number;
+    timeThisWeek: number;
 }
 
 interface ValidationErrors {
@@ -35,6 +45,7 @@ interface ValidationErrors {
 const ProjectManager: React.FC = () => {
     const navigate = useNavigate();
     const [projects, setProjects] = useState<Project[]>([]);
+    const [members, setMembers] = useState<Member[]>([]);
     const [open, setOpen] = useState(false);
     const [currentProject, setCurrentProject] = useState<(Partial<Project> & { budget?: number | undefined }) | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -44,6 +55,7 @@ const ProjectManager: React.FC = () => {
     useEffect(() => {
         checkAuth();
         fetchProjects();
+        fetchMembers();
     }, []);
 
     const checkAuth = async () => {
@@ -61,7 +73,7 @@ const ProjectManager: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await axios.get(API_URL, { withCredentials: true });
+            const response = await axios.get(PROJECT_API_URL, { withCredentials: true });
             setProjects(response.data);
         } catch (error) {
             setError("Failed to fetch projects");
@@ -70,6 +82,18 @@ const ProjectManager: React.FC = () => {
             }
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchMembers = async () => {
+        try {
+            const response = await axios.get(MEMBERS_API_URL, { withCredentials: true });
+            setMembers(response.data);
+        } catch (error) {
+            console.error("Failed to fetch team members", error);
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                navigate("/login");
+            }
         }
     };
 
@@ -96,8 +120,8 @@ const ProjectManager: React.FC = () => {
         }
 
         // Team members validation
-        if (!currentProject?.teamMembers?.trim()) {
-            errors.teamMembers = "Team members are required";
+        if (!currentProject?.teamMembers || currentProject.teamMembers.length === 0) {
+            errors.teamMembers = "At least one team member is required";
             isValid = false;
         }
 
@@ -154,9 +178,9 @@ const ProjectManager: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' }
             };
             if (currentProject._id) {
-                await axios.put(`${API_URL}/${currentProject._id}`, currentProject, config);
+                await axios.put(`${PROJECT_API_URL}/${currentProject._id}`, currentProject, config);
             } else {
-                await axios.post(API_URL, currentProject, config);
+                await axios.post(PROJECT_API_URL, currentProject, config);
             }
             await fetchProjects();
             setOpen(false);
@@ -180,7 +204,7 @@ const ProjectManager: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            await axios.delete(`${API_URL}/${id}`, { withCredentials: true });
+            await axios.delete(`${PROJECT_API_URL}/${id}`, { withCredentials: true });
             await fetchProjects();
         } catch (error) {
             setError("Error deleting project");
@@ -192,7 +216,7 @@ const ProjectManager: React.FC = () => {
         }
     };
 
-    const handleInputChange = (field: keyof Project, value: string | number) => {
+    const handleInputChange = (field: keyof Project, value: string | number | string[]) => {
         setCurrentProject(prev => {
             if (!prev) return prev;
             return { ...prev, [field]: value };
@@ -212,6 +236,22 @@ const ProjectManager: React.FC = () => {
         return amount.toLocaleString('en-IN');
     };
 
+    // Get member options for the dropdown
+    const getMemberOptions = () => {
+        return members.map(member => ({
+            value: member.name,
+            label: `${member.name} (${member.roles.join(", ")})`
+        }));
+    };
+
+    // Format team members for display in the table
+    const getTeamMembersString = (teamMembers: string[] | string): string => {
+        if (Array.isArray(teamMembers)) {
+            return teamMembers.join(", ");
+        }
+        return teamMembers;
+    };
+
     return (
         <Card className="p-3 max-w-7xl mx-auto mt-6">
             <div className="flex justify-between items-center">
@@ -219,7 +259,7 @@ const ProjectManager: React.FC = () => {
                     <CardTitle>Project Manager</CardTitle>
                 </CardHeader>
                 <Button className="me-7" onClick={() => {
-                    setCurrentProject({ name: "", description: "", teamMembers: "", startDate: "", endDate: "", status: "Not Started", budget: 0 });
+                    setCurrentProject({ name: "", description: "", teamMembers: [], startDate: "", endDate: "", status: "Not Started", budget: 0 });
                     setValidationErrors({}); setOpen(true);
                 }}> Add Project
                 </Button>
@@ -252,7 +292,7 @@ const ProjectManager: React.FC = () => {
                                             <TableRow key={project._id}>
                                                 <TableCell>{project.name}</TableCell>
                                                 <TableCell>{project.description}</TableCell>
-                                                <TableCell>{project.teamMembers}</TableCell>
+                                                <TableCell>{getTeamMembersString(project.teamMembers)}</TableCell>
                                                 <TableCell>{project.startDate}</TableCell>
                                                 <TableCell>{project.endDate}</TableCell>
                                                 <TableCell>₹{formatRupees(project.budget)}</TableCell>
@@ -308,9 +348,22 @@ const ProjectManager: React.FC = () => {
 
                         <div>
                             <Label>Team Members</Label>
-                            <Input type="text" value={currentProject?.teamMembers || ""}
-                                onChange={e => handleInputChange('teamMembers', e.target.value)}
-                                className={validationErrors.teamMembers ? "border-red-500" : ""} />
+                            <Select
+                                isMulti
+                                name="teamMembers"
+                                options={getMemberOptions()}
+                                value={
+                                    Array.isArray(currentProject?.teamMembers)
+                                        ? getMemberOptions().filter(option => 
+                                            currentProject?.teamMembers?.includes(option.value))
+                                        : []
+                                }
+                                onChange={(selectedOptions) => {
+                                    const teamMembers = selectedOptions.map(option => option.value);
+                                    handleInputChange('teamMembers', teamMembers);
+                                }}
+                                className={validationErrors.teamMembers ? "border-red-500" : ""}
+                            />
                             {validationErrors.teamMembers && (
                                 <div className="text-red-500 text-sm mt-1 flex items-center">
                                     <AlertTriangle size={14} className="mr-1" />
