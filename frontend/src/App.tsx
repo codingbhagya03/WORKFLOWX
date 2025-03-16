@@ -22,6 +22,7 @@ import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/pages/ProtectedRoute";
 import User from "./pages/User";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
                     {/* Authentication routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
                     
                     {/* Protected App routes */}
                     <Route path="/" element={<ProtectedRoute><AppLayout pageTitle="Dashboard" /></ProtectedRoute>}>

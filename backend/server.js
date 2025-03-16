@@ -11,6 +11,7 @@ const projectRoutes = require("./routes/projectRoutes");
 const memberRoutes = require("./routes/memberRoutes");
 const timesheetRoutes = require("./routes/timesheetRoutes");
 const eventRoutes = require("./routes/eventRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
@@ -257,6 +258,9 @@ const authMiddleware = (req, res, next) => {
     return res.status(401).json({ message: "Invalid token" });
   }
 };
+
+// ✅ 🟢 **Auth Routes (Password Reset)**
+app.use("/auth", authRoutes); // Add this line
 
 // ✅ 🟢 **Todo Routes (Task Management)**
 app.use("/api/todos", authMiddleware, todoRoutes);

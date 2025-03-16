@@ -55,7 +55,7 @@ const Login: React.FC = () => {
     } else {
       setPassword(value);
     }
-    
+
     // Clear error when field is edited
     if (errors[field]) {
       setErrors({
@@ -67,7 +67,7 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -75,16 +75,16 @@ const Login: React.FC = () => {
     try {
       setIsLoading(true);
       const response = await axios.post(
-        "http://localhost:5000/login", 
-        { email, password }, 
+        "http://localhost:5000/login",
+        { email, password },
         { withCredentials: true }
       );
-      
+
       if (response.data.user) {
         // Update the auth context with the user data
         login(response.data.user);
         toast.success("Login successful!");
-        
+
         // Redirect to the page they were trying to access, or home if none
         setTimeout(() => navigate(from, { replace: true }), 1000);
       } else {
@@ -140,9 +140,9 @@ const Login: React.FC = () => {
                 <label htmlFor="password" className="text-sm font-medium">
                   Password
                 </label>
-                <a href="#" className="text-sm text-yellow-500 hover:text-yellow-600 transition-colors">
+                <Link to="/forgot-password" className="text-sm text-yellow-500 hover:text-yellow-600 transition-colors">
                   Forgot password?
-                </a>
+                </Link>
               </div>
               <input
                 id="password"
