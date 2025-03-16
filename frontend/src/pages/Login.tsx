@@ -1,6 +1,6 @@
 import { useAuth } from "@/context/AuthContext";
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import axios from "axios";
 
@@ -10,6 +10,18 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, isAuthenticated } = useAuth();
+
+  // Get the path the user was trying to access
+  const from = location.state?.from || "/";
+
+  // If user is already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const validateForm = (): boolean => {
     const newErrors: { email?: string; password?: string } = {};
@@ -62,9 +74,22 @@ const Login: React.FC = () => {
 
     try {
       setIsLoading(true);
-      await axios.post("http://localhost:5000/login", { email, password }, { withCredentials: true });
-      toast.success("Login successful!");
-      setTimeout(() => navigate("/"), 1000);
+      const response = await axios.post(
+        "http://localhost:5000/login", 
+        { email, password }, 
+        { withCredentials: true }
+      );
+      
+      if (response.data.user) {
+        // Update the auth context with the user data
+        login(response.data.user);
+        toast.success("Login successful!");
+        
+        // Redirect to the page they were trying to access, or home if none
+        setTimeout(() => navigate(from, { replace: true }), 1000);
+      } else {
+        toast.error("Invalid response from server");
+      }
     } catch (error: any) {
       console.error("Login Error:", error.response?.data || error.message);
       toast.error(error.response?.data?.message || "Login failed! Check your credentials.");

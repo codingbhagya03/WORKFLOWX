@@ -31,7 +31,7 @@ mongoose
   .catch((err) => console.log("❌ MongoDB Connection Error:", err));
 
 // ✅ JWT Secret Key
-const JWT_SECRET = process.env.JWT_SECRET || ac53d90a08cd7ca18d63dd284a0c6f81a03808c69fd1054889314220e9d1d966;
+const JWT_SECRET = process.env.JWT_SECRET || "ac53d90a08cd7ca18d63dd284a0c6f81a03808c69fd1054889314220e9d1d966";
 
 // 🟢 **User Registration Route (Signup)**
 app.post("/register", async (req, res) => {
@@ -61,41 +61,35 @@ app.post("/login", async (req, res) => {
 
     const user = await EmployeeModel.findOne({ email });
     if (!user) {
-      console.log("User not found:", email);
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    console.log("Stored Password in DB:", user.password);
-    console.log("Entered Password:", password);
-
-    // ✅ Directly compare the password (No Hashing)
+    // Direct password comparison (in a production app, use bcrypt)
     if (password !== user.password) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
-    console.log('tokennnnnnn', token);
 
-    // res.cookie("token", token, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: "Strict",
-    //   maxAge: 7 * 24 * 60 * 60 * 1000,
-    // });
-
-
-    const cookies = res.cookie("token", token, {
+    // Set cookie
+    res.cookie("token", token, {
       httpOnly: true,
-      secure: true, sameSite: "Strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === "production", // Use true in production
+      sameSite: "Strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
-    // console.log('cookies',cookies);
 
-
-    res.json({ message: "Login successful", user: { id: user._id, email: user.email, name: user.name } });
+    res.json({
+      message: "Login successful",
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name
+      }
+    });
   } catch (error) {
     console.error("Login Error:", error);
-    res.status(500).json({ message: "Server error", error });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
@@ -132,31 +126,31 @@ app.put("/api/users/update", async (req, res) => {
 app.put("/api/users/password", async (req, res) => {
   try {
     const { currentPassword, newPassword, userId } = req.body;
-    
+
     if (!userId) {
       return res.status(400).json({ message: "User ID is required" });
     }
-    
+
     const user = await EmployeeModel.findById(userId);
-    
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    
+
     // Check current password
     if (currentPassword !== user.password) {
       return res.status(401).json({ message: "Current password is incorrect" });
     }
-    
+
     // Update password
     user.password = newPassword;
     await user.save();
-    
+
     res.json({ message: "Password updated successfully" });
   } catch (error) {
     console.error("Password update error:", error);
-    res.status(500).json({ 
-      message: "Error updating password", 
+    res.status(500).json({
+      message: "Error updating password",
       error: error.message
     });
   }
@@ -166,29 +160,29 @@ app.put("/api/users/password", async (req, res) => {
 app.delete("/api/users/delete", async (req, res) => {
   try {
     const { userId } = req.body;
-    
+
     if (!userId) {
       return res.status(400).json({ message: "User ID is required" });
     }
-    
+
     const user = await EmployeeModel.findByIdAndDelete(userId);
-    
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    
+
     // Clear auth cookie
     res.clearCookie("token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict"
     });
-    
+
     res.json({ message: "Account deleted successfully" });
   } catch (error) {
     console.error("Account deletion error details:", error);
-    res.status(500).json({ 
-      message: "Error deleting account", 
+    res.status(500).json({
+      message: "Error deleting account",
       error: error.message,
       stack: process.env.NODE_ENV === "development" ? error.stack : undefined
     });
@@ -197,14 +191,37 @@ app.delete("/api/users/delete", async (req, res) => {
 
 // 🔹 **Check Authentication (Persistent Login)**
 app.get("/check-auth", (req, res) => {
-  const token = req.cookies.token; // ✅ Read JWT from HTTP-only cookie
-  if (!token) return res.json({ isAuthenticated: false });
+  try {
+    const token = req.cookies.token;
+    if (!token) {
+      return res.json({ isAuthenticated: false });
+    }
 
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) return res.json({ isAuthenticated: false });
+    jwt.verify(token, JWT_SECRET, async (err, decoded) => {
+      if (err) {
+        return res.json({ isAuthenticated: false });
+      }
 
-    res.json({ isAuthenticated: true, userId: decoded.id });
-  });
+      // Check if user exists
+      try {
+        const user = await EmployeeModel.findById(decoded.id);
+        if (!user) {
+          return res.json({ isAuthenticated: false });
+        }
+
+        return res.json({
+          isAuthenticated: true,
+          userId: decoded.id
+        });
+      } catch (userErr) {
+        console.error("Error finding user:", userErr);
+        return res.json({ isAuthenticated: false });
+      }
+    });
+  } catch (error) {
+    console.error("Auth check error:", error);
+    res.json({ isAuthenticated: false });
+  }
 });
 
 // 🔴 **Logout Route (Clear Cookie)**
