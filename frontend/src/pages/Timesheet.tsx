@@ -70,16 +70,31 @@ const Timesheet = () => {
 
   const fetchTasks = async () => {
     try {
-      const response = await axios.get(TASK_API_URL, {
+      setIsLoading(true); // Add loading state
+      const tasksResponse = await axios.get(TASK_API_URL, {
         withCredentials: true,
         headers: { 'Content-Type': 'application/json' }
       });
-      setTasks(response.data);
-      // Set filteredTasks to all tasks initially
-      setFilteredTasks(response.data);
+      
+      if (tasksResponse.data) {
+        setTasks(tasksResponse.data);
+        
+        // Update filtered tasks based on current project selection
+        if (selectedProject) {
+          setFilteredTasks(tasksResponse.data.filter(task => task.projectId === selectedProject));
+        } else {
+          setFilteredTasks(tasksResponse.data);
+        }
+      }
     } catch (error) {
       console.error("Error fetching tasks:", error);
-      toast({ title: "Error", description: "Failed to load tasks", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to load task data. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -98,12 +113,35 @@ const Timesheet = () => {
 
   // Filter tasks based on selected project
   const filterTasksByProject = (projectId) => {
-    if (!projectId) {
-      // Show all tasks when no project is selected
+    try {
+      if (!projectId) {
+        setFilteredTasks(tasks);
+        return;
+      }
+      
+      const filtered = tasks.filter((task) => task.projectId === projectId);
+      
+      // Handle case where no tasks match the project
+      if (filtered.length === 0) {
+        toast({
+          title: "No Tasks Available",
+          description: "There are no tasks associated with this project. Please create a task first or select a different project.",
+          variant: "destructive", // Changed from "warning" to "destructive"
+          duration: 5000, // Increase duration so users have time to read it
+        });
+      }
+      
+      setFilteredTasks([{
+        _id: "no-tasks", 
+        name: "No tasks available for this project",
+        projectId: projectId
+      }]);
+    } catch (error) {
+      console.error("Error filtering tasks:", error);
+      // Fallback to showing all tasks in case of error
       setFilteredTasks(tasks);
-      return;
+      setSelectedTask("");
     }
-    setFilteredTasks(tasks.filter((task) => task.projectId === projectId));
   };
 
   // Handle Project Change
@@ -198,7 +236,8 @@ const Timesheet = () => {
       resetForm();
       setIsDialogOpen(false);
     } catch (error) {
-      toast({ title: "Error", description: "Failed to save time entry", variant: "destructive" });
+      console.error("Save error details:", error.response?.data || error.message || error);
+      toast({ title: "Error", description: error.response?.data?.message || "Failed to save time entry", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

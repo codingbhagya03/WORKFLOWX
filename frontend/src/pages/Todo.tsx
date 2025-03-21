@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
 import { SquarePen, Trash } from "lucide-react";
 
 const API_URL = "http://localhost:5000/api/tasks";
@@ -34,10 +35,13 @@ const TaskManager: React.FC = () => {
   const [currentTask, setCurrentTask] = useState<Partial<Task> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [projects, setProjects] = useState<{ _id: string, name: string }[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     checkAuth();
     fetchTasks();
+    fetchProjects();
   }, []);
 
   const checkAuth = async () => {
@@ -69,6 +73,24 @@ const TaskManager: React.FC = () => {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/api/projects", {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      setProjects(response.data);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch projects",
+        variant: "destructive",
+      });
     }
   };
 
@@ -222,12 +244,19 @@ const TaskManager: React.FC = () => {
 
             <div className="space-y-2">
               <Label>Project</Label>
-              <Input
-                type="text"
+              <Select
                 value={currentTask?.projects || ""}
-                onChange={e => setCurrentTask({ ...currentTask, projects: e.target.value })}
-                required
-              />
+                onValueChange={value => setCurrentTask({ ...currentTask, projects: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map(project => (
+                    <SelectItem key={project._id} value={project.name}>{project.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
